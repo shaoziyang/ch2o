@@ -1,0 +1,123 @@
+<html>
+<head>
+	<meta charset="UTF-8">
+	<link rel="icon" type="image/x-icon" href="favicon.ico" sizes="any">
+	<script src="https://unpkg.com/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+
+<body>
+<br><br>
+<div align="center"><p><span style="font-size:4em">CH2O 浓度: <span id='CH2O_DATA' style="color:red"> </span></span></p></div>
+<div align="center"><p><span>最后更新时间：</span><span id="TM" style="color:#1080C0"></span></p></div>
+<br><br><br><br>
+<canvas id="history" width="800" height="200"></canvas>
+
+<script src="lorenz.js"></script>
+
+<script>
+function update(){
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", "/ch2o/ch2o.php", true);
+	xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+	xhr.onreadystatechange = function() {
+		if (xhr.readyState === 4 && xhr.status === 200) {
+			r = xhr.responseText;
+			if(r != ''){
+				e = document.getElementById("CH2O_DATA");
+				d = r.substring(20);
+				if (d.length > 5) d = d.substring(0, 5);
+				e.innerHTML = d;
+				if (d <= 0.05) e.style.color = '#00C000';
+				else if (d <= 0.08) e.style.color = '#80C020';
+				else e.style.color = '#FF0000';
+				e = document.getElementById("TM");
+				e.innerHTML = r.substring(0, 20);
+				t1 = new Date(r.substring(0, 20));
+				t2 = new Date();
+				if ((t2 - t1) > 60000)
+					e.style.color = "#1080C0";
+				else
+					e.style.color = "#FF8010";
+			}
+			console.log(r);
+		}
+	};
+	xhr.send();
+}
+setInterval(update, 2000);
+</script>
+
+<script>
+const ch2octx = document.getElementById('history').getContext('2d');
+var ch2olabels = ['','',''];
+var ch2odat = [0,0,0];
+
+var ch2odata = {
+	labels: ch2olabels,
+	datasets: [{
+		label: 'CH2O 浓度变化曲线',
+		data: ch2odat,
+		fill: false,
+		borderColor: 'rgb(75, 192, 192, 0.8)', // 设置线的颜色
+		borderWidth: 1,
+		tension: 0.1,
+		pointRadius: function(context) {
+			var value = context.dataset.data[context.dataIndex];
+			if (context.dataset.data.length < 24)
+				return 8;
+			else
+				return value > 0.08 ? 4 : 2;
+		},
+		pointHoverRadius: 7,
+		pointHitRadius: 10,
+		pointBackgroundColor: function(context) {
+			var value = context.dataset.data[context.dataIndex];
+			return value > 0.08 ? 'red' : 'green';
+		},
+	}]
+};
+const config = {
+	type: 'line', // 设置图表类型
+	data: ch2odata,
+};
+
+const ch2ochart = new Chart(ch2octx, config);
+</script>
+
+<script>
+function updatehis(){
+	var his = new XMLHttpRequest();
+	his.open("POST", "/ch2o/ch2ohis.php", true);
+	his.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+	his.onreadystatechange = function() {
+		if (his.readyState === 4 && his.status === 200) {
+			h = his.responseText;
+            console.log('update chart');
+			if(h != ''){
+				ch2olabels.length = 0;
+				ch2odat.length = 0;
+				a = h.split('|');
+				for(i=0; i<a.length ;i++){
+					d = a[i].trim();
+					if(d.trim() == '')
+						continue;
+
+					if(((i%6)==0)||(a.length<24))
+						ch2olabels.push(d.substring(0, 20));
+					else
+						ch2olabels.push('');
+					ch2odat.push(d.substring(20));
+				}
+				ch2ochart.update();
+			}
+		}
+	};
+	his.send();
+}
+
+updatehis()
+setInterval(updatehis, 3600000);
+</script>
+
+</body>
+</html>
