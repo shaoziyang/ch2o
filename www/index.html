@@ -57,8 +57,11 @@ var ch2odata = {
 	datasets: [{
 		label: 'CH2O 浓度变化曲线',
 		data: ch2odat,
-		fill: false,
-		borderColor: 'rgb(75, 192, 192, 0.8)', // 设置线的颜色
+		fill: false, 
+    borderColor: function(context) {  // 设置线的颜色
+      var value = context.dataset.data[context.dataIndex];
+      return value > 0.08 ? 'rgb(200, 0, 0, 1)' : 'rgb(75, 192, 192, 0.5)';
+    },
 		borderWidth: 1,
 		tension: 0.1,
 		pointRadius: function(context) {
@@ -66,13 +69,14 @@ var ch2odata = {
 			if (context.dataset.data.length < 24)
 				return 8;
 			else
-				return value > 0.08 ? 4 : 2;
+				return value > 0.08 ? 3 : 2.5;
 		},
 		pointHoverRadius: 7,
 		pointHitRadius: 10,
 		pointBackgroundColor: function(context) {
 			var value = context.dataset.data[context.dataIndex];
-			return value > 0.08 ? 'red' : 'green';
+			//return value > 0.08 ? 'red' : 'green';
+      return (context.dataIndex%3)?((value > 0.08)?'red':'green'):'white';
 		},
 	}]
 };
@@ -102,7 +106,7 @@ function updatehis(){
 					if(d.trim() == '')
 						continue;
 
-					if(((i%6)==0)||(a.length<24))
+					if(((i%3)==0)||(a.length<24))
 						ch2olabels.push(d.substring(0, 20));
 					else
 						ch2olabels.push('');
